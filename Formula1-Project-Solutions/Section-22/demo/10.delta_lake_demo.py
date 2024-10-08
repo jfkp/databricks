@@ -8,14 +8,25 @@
 # COMMAND ----------
 
 # MAGIC %sql
+# MAGIC SELECT CURRENT_METASTORE();
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC DROP DATABASE f1_demo
+
+# COMMAND ----------
+
+# MAGIC %sql
 # MAGIC CREATE DATABASE IF NOT EXISTS f1_demo
-# MAGIC LOCATION '/mnt/formula1dl/demo'
+# MAGIC
+# MAGIC
 
 # COMMAND ----------
 
 results_df = spark.read \
 .option("inferSchema", True) \
-.json("/mnt/formula1dl/raw/2021-03-28/results.json")
+.json("/mnt/jfkmount/raw/results.json")
 
 # COMMAND ----------
 
@@ -28,14 +39,14 @@ results_df.write.format("delta").mode("overwrite").saveAsTable("f1_demo.results_
 
 # COMMAND ----------
 
-results_df.write.format("delta").mode("overwrite").save("/mnt/formula1dl/demo/results_external")
+results_df.write.format("delta").mode("overwrite").save("/mnt/jfkmount/demo/results_external")
 
 # COMMAND ----------
 
 # MAGIC %sql
 # MAGIC CREATE TABLE f1_demo.results_external
 # MAGIC USING DELTA
-# MAGIC LOCATION '/mnt/formula1dl/demo/results_external'
+# MAGIC
 
 # COMMAND ----------
 
@@ -44,7 +55,7 @@ results_df.write.format("delta").mode("overwrite").save("/mnt/formula1dl/demo/re
 
 # COMMAND ----------
 
-results_external_df = spark.read.format("delta").load("/mnt/formula1dl/demo/results_external")
+results_external_df = spark.read.format("delta").load("/mnt/jfkmount/demo/results_external")
 
 # COMMAND ----------
 
@@ -86,7 +97,7 @@ results_df.write.format("delta").mode("overwrite").partitionBy("constructorId").
 
 from delta.tables import DeltaTable
 
-deltaTable = DeltaTable.forPath(spark, "/mnt/formula1dl/demo/results_managed")
+deltaTable = DeltaTable.forPath(spark, "/mnt/jfkmount/demo/results_managed")
 
 deltaTable.update("position <= 10", { "points": "21 - position" } ) 
 
@@ -110,7 +121,7 @@ deltaTable.update("position <= 10", { "points": "21 - position" } )
 
 from delta.tables import DeltaTable
 
-deltaTable = DeltaTable.forPath(spark, "/mnt/formula1dl/demo/results_managed")
+deltaTable = DeltaTable.forPath(spark, "/mnt/jfkmount/demo/results_managed")
 
 deltaTable.delete("points = 0") 
 
@@ -128,7 +139,7 @@ deltaTable.delete("points = 0")
 
 drivers_day1_df = spark.read \
 .option("inferSchema", True) \
-.json("/mnt/formula1dl/raw/2021-03-28/drivers.json") \
+.json("/mnt/jfkmount/raw/2021-03-28/drivers.json") \
 .filter("driverId <= 10") \
 .select("driverId", "dob", "name.forename", "name.surname")
 
@@ -146,7 +157,7 @@ from pyspark.sql.functions import upper
 
 drivers_day2_df = spark.read \
 .option("inferSchema", True) \
-.json("/mnt/formula1dl/raw/2021-03-28/drivers.json") \
+.json("/mnt/jfkmount/raw/2021-03-28/drivers.json") \
 .filter("driverId BETWEEN 6 AND 15") \
 .select("driverId", "dob", upper("name.forename").alias("forename"), upper("name.surname").alias("surname"))
 
@@ -164,7 +175,7 @@ from pyspark.sql.functions import upper
 
 drivers_day3_df = spark.read \
 .option("inferSchema", True) \
-.json("/mnt/formula1dl/raw/2021-03-28/drivers.json") \
+.json("/mnt/jfkmount/raw/2021-03-28/drivers.json") \
 .filter("driverId BETWEEN 1 AND 5 OR driverId BETWEEN 16 AND 20") \
 .select("driverId", "dob", upper("name.forename").alias("forename"), upper("name.surname").alias("surname"))
 
@@ -236,7 +247,7 @@ drivers_day3_df = spark.read \
 from pyspark.sql.functions import current_timestamp
 from delta.tables import DeltaTable
 
-deltaTable = DeltaTable.forPath(spark, "/mnt/formula1dl/demo/drivers_merge")
+deltaTable = DeltaTable.forPath(spark, "/mnt/jfkmount/demo/drivers_merge")
 
 deltaTable.alias("tgt").merge(
     drivers_day3_df.alias("upd"),
@@ -442,12 +453,12 @@ df = spark.table("f1_demo.drivers_convert_to_delta")
 
 # COMMAND ----------
 
-df.write.format("parquet").save("/mnt/formula1dl/demo/drivers_convert_to_delta_new")
+df.write.format("parquet").save("/mnt/jfkmount/demo/drivers_convert_to_delta_new")
 
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC CONVERT TO DELTA parquet.`/mnt/formula1dl/demo/drivers_convert_to_delta_new`
+# MAGIC CONVERT TO DELTA parquet.`/mnt/jfkmount/demo/drivers_convert_to_delta_new`
 
 # COMMAND ----------
 

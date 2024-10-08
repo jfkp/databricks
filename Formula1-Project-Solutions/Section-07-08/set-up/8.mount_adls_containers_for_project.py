@@ -4,18 +4,27 @@
 
 # COMMAND ----------
 
+dbutils.fs.unmount('/mnt/databricks/my-mount')
+
+# COMMAND ----------
+
+dbutils.fs.unmount('/mnt/jfkmount/raw')
+
+# COMMAND ----------
+
 def mount_adls(storage_account_name, container_name):
     # Get secrets from Key Vault
-    client_id = dbutils.secrets.get(scope = 'formula1-scope', key = 'formula1-app-client-id')
-    tenant_id = dbutils.secrets.get(scope = 'formula1-scope', key = 'formula1-app-tenant-id')
-    client_secret = dbutils.secrets.get(scope = 'formula1-scope', key = 'formula1-app-client-secret')
+    #client_id = dbutils.secrets.get(scope = 'formula1-scope', key = 'formula1-app-client-id')
+    #tenant_id = dbutils.secrets.get(scope = 'formula1-scope', key = 'formula1-app-tenant-id')
+    #client_secret = dbutils.secrets.get(scope = 'formula1-scope', key = 'formula1-app-client-secret')
     
     # Set spark configurations
-    configs = {"fs.azure.account.auth.type": "OAuth",
-              "fs.azure.account.oauth.provider.type": "org.apache.hadoop.fs.azurebfs.oauth2.ClientCredsTokenProvider",
-              "fs.azure.account.oauth2.client.id": client_id,
-              "fs.azure.account.oauth2.client.secret": client_secret,
-              "fs.azure.account.oauth2.client.endpoint": f"https://login.microsoftonline.com/{tenant_id}/oauth2/token"}
+
+    spark.conf.set("spark.hadoop.google.cloud.auth.service.account.enable", "true")
+    spark.conf.set("spark.hadoop.fs.gs.auth.service.account.email", "{{secrets/SecretBucket/client_email}}")
+    spark.conf.set("spark.hadoop.fs.gs.project.id", "{{secrets/SecretBucket/project_id}}")
+    spark.conf.set("spark.hadoop.fs.gs.auth.service.account.private.key", "{{secrets/SecretBucket/private_key}}")
+    spark.conf.set("spark.hadoop.fs.gs.auth.service.account.private.key.id", "{{secrets/SecretBucket/private_key_id}}")
     
     # Unmount the mount point if it already exists
     if any(mount.mountPoint == f"/mnt/{storage_account_name}/{container_name}" for mount in dbutils.fs.mounts()):
@@ -23,9 +32,8 @@ def mount_adls(storage_account_name, container_name):
     
     # Mount the storage account container
     dbutils.fs.mount(
-      source = f"abfss://{container_name}@{storage_account_name}.dfs.core.windows.net/",
-      mount_point = f"/mnt/{storage_account_name}/{container_name}",
-      extra_configs = configs)
+      source = f"gs://{storage_account_name}/{container_name}/",
+      mount_point = f"/mnt/{storage_account_name}/{container_name}")
     
     display(dbutils.fs.mounts())
 
@@ -36,15 +44,19 @@ def mount_adls(storage_account_name, container_name):
 
 # COMMAND ----------
 
-mount_adls('formula1dl', 'raw')
+mount_adls('jfkmount','raw')
 
 # COMMAND ----------
 
-mount_adls('formula1dl', 'processed')
+mount_adls('jfkmount','demo')
 
 # COMMAND ----------
 
-mount_adls('formula1dl', 'presentation')
+mount_adls('jfkmount', 'processed')
+
+# COMMAND ----------
+
+mount_adls('jfkmount', 'presentation')
 
 # COMMAND ----------
 

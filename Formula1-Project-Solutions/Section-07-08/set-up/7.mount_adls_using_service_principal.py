@@ -17,6 +17,18 @@ dbutils.fs.unmount(
 
 # COMMAND ----------
 
+spark.conf.set("spark.hadoop.google.cloud.auth.service.account.enable", "true")
+spark.conf.set("spark.hadoop.fs.gs.auth.service.account.email", "{{secrets/SecretBucket/client_email}}")
+spark.conf.set("spark.hadoop.fs.gs.project.id", "{{secrets/SecretBucket/project_id}}")
+spark.conf.set("spark.hadoop.fs.gs.auth.service.account.private.key", "{{secrets/SecretBucket/private_key}}")
+spark.conf.set("spark.hadoop.fs.gs.auth.service.account.private.key.id", "{{secrets/SecretBucket/private_key_id}}")
+
+# COMMAND ----------
+
+# MAGIC %fs ls /mnt/databricks
+
+# COMMAND ----------
+
 bucket_name = "gs://jfkmount"
 mount_name = "my-mount"
 dbutils.fs.mount(
